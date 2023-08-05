@@ -1485,15 +1485,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "my_snake"
-version = "0.1.0"
-dependencies = [
- "ggez",
- "image",
- "rand",
-]
-
-[[package]]
 name = "naga"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2273,6 +2264,15 @@ dependencies = [
  "wayland-client",
  "wayland-cursor",
  "wayland-protocols",
+]
+
+[[package]]
+name = "snake"
+version = "0.1.0"
+dependencies = [
+ "ggez",
+ "image",
+ "rand",
 ]
 
 [[package]]

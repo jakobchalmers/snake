@@ -18,7 +18,7 @@ const RECT_SIZE: f32 = 40.0;
 const SCREEN_SIZE: f32 = 800.0;
 const SLEEP_TIME: u32 = 100;
 const MY_GREEN: Color = Color::new(5.0 / 255.0, 155.0 / 255.0, 4.0 / 255.0, 1.0);
-const RESOURCES_PATH: &'static str = "C:/Users/jakob/OneDrive/Rust/my_snake/resources";
+const RESOURCES_PATH: &'static str = "C:/Users/jakob/OneDrive/Rust/snake/resources";
 
 #[derive(Debug)]
 enum ConversionError {
