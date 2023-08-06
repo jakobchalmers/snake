@@ -36,7 +36,7 @@ impl GameState {
     }
 
     fn reset(&mut self) {
-        self.game_page = GamePage::GameOn;
+        // self.game_page = GamePage::GameOn;
         self.snake = Snake::new();
         self.apple = Apple::new();
         self.score.reset_score();
@@ -82,6 +82,7 @@ impl event::EventHandler<ggez::GameError> for GameState {
                     } else {
                         self.game_page = GamePage::Menu;
                     }
+                    self.reset();
                     break
                 }
             }
@@ -133,19 +134,12 @@ impl event::EventHandler<ggez::GameError> for GameState {
         if let Some(keycode) = input.keycode {
             match keycode {
                 KeyCode::Escape | KeyCode::Q => ctx.request_quit(),
-                // KeyCode::Escape | KeyCode::Q => {
-                //     match self.score.save_json() {
-                //         Ok(_) => {},
-                //         Err(e) => eprintln!("Failed to save highscores file: {e}")
-                //     }
-                //     ctx.request_quit();
-                // },
                 _ => {},
             }
 
             match self.game_page {
                 GamePage::Menu => match keycode {
-                    KeyCode::R => self.reset(),
+                    KeyCode::R => self.game_page = GamePage::GameOn,
                     KeyCode::S => self.game_page = GamePage::LeaderBoard,
                     _ => println!("Press another key."),
                 },
@@ -158,7 +152,7 @@ impl event::EventHandler<ggez::GameError> for GameState {
                 },
                 GamePage::LeaderBoard => match keycode {
                     KeyCode::M => self.game_page = GamePage::Menu,
-                    KeyCode::R => self.reset(),
+                    KeyCode::R => self.game_page = GamePage::GameOn,
                     _ => println!("Press another key."),
                 },
             }
