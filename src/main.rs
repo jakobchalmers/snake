@@ -1,16 +1,26 @@
 use ggez::event;
+use ggez::glam::Vec2;
 use ggez::graphics;
+use ggez::graphics::Canvas;
 use ggez::graphics::Color;
+use ggez::graphics::{PxScale, Text, TextFragment, TextLayout};
 use ggez::input::keyboard::KeyCode;
 use ggez::Context;
 use ggez::{self, GameResult};
 use snake::constants::{RECT_SIZE, SCREEN_SIZE, SLEEP_TIME};
-use snake::utils::{Apple, Direction, Snake, ScoreBoard};
+use snake::utils::{Apple, Direction, ScoreBoard, Snake};
 use std::thread;
 use std::time::Duration;
 
+enum GamePage {
+    Menu,
+    GameOn,
+    LeaderBoard,
+}
+
 struct GameState {
-    gameover: bool,
+    // game_over: bool,
+    game_page: GamePage,
     snake: Snake,
     apple: Apple,
     score: ScoreBoard,
@@ -19,21 +29,43 @@ struct GameState {
 impl GameState {
     fn new() -> Self {
         GameState {
-            gameover: false,
+            // game_over: false,
+            game_page: GamePage::GameOn,
             snake: Snake::new(),
             apple: Apple::new(),
             score: ScoreBoard::new(),
         }
+    }
+
+    fn reset(&mut self) {
+        // self.game_over = false;
+        self.game_page = GamePage::GameOn;
+        self.snake = Snake::new();
+        self.apple = Apple::new();
+        self.score.reset_score();
+    }
+}
+
+impl GameState {
+    fn draw_home(&self, canvas: &mut Canvas) {
+        let text_string = "Press R to restart, S to see score board or Q to quit.".to_string();
+        let mut text = Text::new(TextFragment {
+            text: text_string,
+            color: Some(Color::BLACK),
+            scale: Some(PxScale::from(20.0)),
+            ..Default::default()
+        });
+        text.set_layout(TextLayout::center());
+
+        let text_x = SCREEN_SIZE / 2.0;
+        let text_y = SCREEN_SIZE / 2.0;
+        canvas.draw(&text, Vec2::new(text_x, text_y));
     }
 }
 
 impl event::EventHandler<ggez::GameError> for GameState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         thread::sleep(Duration::from_millis(SLEEP_TIME.into()));
-
-        if self.gameover {
-            ctx.request_quit();
-        }
 
         if let Some(direction) = self.snake.direction {
             let mut head = self.snake.body[0];
@@ -45,8 +77,12 @@ impl event::EventHandler<ggez::GameError> for GameState {
                     && head.y + RECT_SIZE > point.y
                     && head.y < point.y + RECT_SIZE
                 {
-                    self.gameover = true;
                     // Todo: Make sure this throws you out immidiately
+                    // self.game_over = true;
+                    self.game_page = GamePage::Menu;
+                    if self.score.is_highscore() {
+                        self.score.insert_highscore()
+                    }
                     break;
                 }
             }
@@ -62,7 +98,7 @@ impl event::EventHandler<ggez::GameError> for GameState {
                 && head.y <= self.apple.y + RECT_SIZE
             {
                 self.apple = Apple::new();
-                self.score.update();
+                self.score.increase();
             } else {
                 let _ = self.snake.body.pop();
             }
@@ -74,9 +110,15 @@ impl event::EventHandler<ggez::GameError> for GameState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let mut canvas = graphics::Canvas::from_frame(ctx, Color::WHITE);
 
-        self.apple.draw(ctx, &mut canvas)?;
-        self.snake.draw(ctx, &mut canvas)?;
-        self.score.draw(ctx, &mut canvas);
+        match self.game_page {
+            GamePage::Menu => self.draw_home(&mut canvas),
+            GamePage::LeaderBoard => self.score.draw_scoreboard(&mut canvas),
+            GamePage::GameOn => {
+                self.apple.draw(ctx, &mut canvas)?;
+                self.snake.draw(ctx, &mut canvas)?;
+                self.score.draw_score(ctx, &mut canvas);
+            }
+        }
 
         canvas.finish(ctx)?;
 
@@ -91,10 +133,27 @@ impl event::EventHandler<ggez::GameError> for GameState {
     ) -> Result<(), ggez::GameError> {
         if let Some(keycode) = input.keycode {
             match keycode {
-                KeyCode::Escape => ctx.request_quit(),
-                _ => match Direction::try_from(keycode) {
-                    Ok(direction) => self.snake.direction = Some(direction),
-                    Err(e) => eprintln!("Can't convert keycode to direction: {:?}", e),
+                KeyCode::Escape | KeyCode::Q => ctx.request_quit(),
+                _ => {},
+            }
+            
+            match self.game_page {
+                GamePage::Menu => match keycode {
+                    KeyCode::R => self.reset(),
+                    KeyCode::S => self.game_page = GamePage::LeaderBoard,
+                    _ => println!("Press another key."),
+                },
+                GamePage::GameOn => match keycode {
+                    KeyCode::M => self.game_page = GamePage::Menu,
+                    _ => match Direction::try_from(keycode) {
+                        Ok(direction) => self.snake.direction = Some(direction),
+                        Err(e) => eprintln!("Can't convert keycode to direction: {:?}", e),
+                    },
+                },
+                GamePage::LeaderBoard => match keycode {
+                    KeyCode::M => self.game_page = GamePage::Menu,
+                    KeyCode::R => self.reset(),
+                    _ => println!("Press another key."),
                 },
             }
         }
@@ -118,6 +177,4 @@ fn main() -> GameResult {
     state.apple.resize()?;
 
     event::run(ctx, event_loop, state);
-
-    Ok(())  
 }

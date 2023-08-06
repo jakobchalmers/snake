@@ -1,12 +1,17 @@
 use ggez::glam::Vec2;
 use ggez::graphics;
+use ggez::graphics::Canvas;
 use ggez::graphics::{Color, DrawMode, Mesh, Rect};
-use ggez::graphics::{Text, TextFragment, TextLayout};
+use ggez::graphics::{PxScale, Text, TextFragment, TextLayout};
 use ggez::input::keyboard::KeyCode;
 use ggez::Context;
 use ggez::{self, GameResult};
 use image::imageops;
 use rand::Rng;
+use serde_json;
+use std::collections::HashMap;
+use std::fs::File;
+use std::io::Write;
 
 pub mod constants {
     use super::*;
@@ -20,8 +25,6 @@ pub mod constants {
 }
 
 pub mod utils {
-
-    use ggez::graphics::{PxScale, Canvas};
 
     use super::constants::*;
     use super::*;
@@ -41,18 +44,22 @@ pub mod utils {
 
     pub struct ScoreBoard {
         pub score: u32,
+        pub highscores: HashMap<String, u32>,
     }
 
     impl ScoreBoard {
         pub fn new() -> Self {
-            ScoreBoard { score: 0 }
+            ScoreBoard {
+                score: 0,
+                highscores: HashMap::new(),
+            }
         }
 
-        pub fn update(&mut self) {
+        pub fn increase(&mut self) {
             self.score += 1;
         }
 
-        pub fn draw(&self, ctx: &Context, canvas: &mut Canvas) {
+        pub fn draw_score(&self, ctx: &Context, canvas: &mut Canvas) {
             let mut text = Text::new(TextFragment {
                 text: format!("score: {}", self.score),
                 color: Some(Color::BLACK),
@@ -66,6 +73,37 @@ pub mod utils {
 
             canvas.draw(&text, Vec2::new(text_x, text_y));
         }
+
+        pub fn draw_scoreboard(&self, canvas: &mut Canvas) {
+            for (i, (player, score)) in self.highscores.iter().enumerate() {
+                let mut text = Text::new(TextFragment {
+                    text: format!("{}: {}", player, score),
+                    color: Some(Color::BLACK),
+                    scale: Some(PxScale::from(25.0)),
+                    ..Default::default()
+                });
+                text.set_layout(TextLayout::center());
+    
+                let text_x = SCREEN_SIZE / 2.0;
+                let text_y = ((i + 1) as f32) * SCREEN_SIZE / 16.0;
+    
+                canvas.draw(&text, Vec2::new(text_x, text_y));
+            }
+
+        }
+
+        pub fn reset_score(&mut self) {
+            self.score = 0;
+        }
+
+        pub fn is_highscore(&self) -> bool {
+            self.highscores.values().all(|score| self.score > *score)
+        }
+
+        pub fn insert_highscore(&mut self) {
+            self.highscores.insert("Jakob".to_string(), self.score);
+        }
+
     }
 
     #[derive(Debug, Clone, Copy)]
@@ -210,7 +248,6 @@ pub mod utils {
     pub struct Snake {
         pub body: Vec<Point>,
         pub body_color: Color,
-        pub head_color: Color,
         pub direction: Option<Direction>,
         pub img: Img,
     }
@@ -219,7 +256,6 @@ pub mod utils {
         pub fn new() -> Self {
             Snake {
                 body: vec![Point::new()],
-                head_color: Color::MAGENTA,
                 body_color: MY_GREEN,
                 direction: None,
                 img: Img::new(),
