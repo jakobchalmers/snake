@@ -5,7 +5,7 @@ use ggez::input::keyboard::KeyCode;
 use ggez::Context;
 use ggez::{self, GameResult};
 use snake::constants::{RECT_SIZE, SCREEN_SIZE, SLEEP_TIME};
-use snake::utils::{Apple, Direction, Snake};
+use snake::utils::{Apple, Direction, Snake, ScoreBoard};
 use std::thread;
 use std::time::Duration;
 
@@ -13,6 +13,7 @@ struct GameState {
     gameover: bool,
     snake: Snake,
     apple: Apple,
+    score: ScoreBoard,
 }
 
 impl GameState {
@@ -21,6 +22,7 @@ impl GameState {
             gameover: false,
             snake: Snake::new(),
             apple: Apple::new(),
+            score: ScoreBoard::new(),
         }
     }
 }
@@ -44,6 +46,7 @@ impl event::EventHandler<ggez::GameError> for GameState {
                     && head.y < point.y + RECT_SIZE
                 {
                     self.gameover = true;
+                    // Todo: Make sure this throws you out immidiately
                     break;
                 }
             }
@@ -59,6 +62,7 @@ impl event::EventHandler<ggez::GameError> for GameState {
                 && head.y <= self.apple.y + RECT_SIZE
             {
                 self.apple = Apple::new();
+                self.score.update();
             } else {
                 let _ = self.snake.body.pop();
             }
@@ -72,6 +76,7 @@ impl event::EventHandler<ggez::GameError> for GameState {
 
         self.apple.draw(ctx, &mut canvas)?;
         self.snake.draw(ctx, &mut canvas)?;
+        self.score.draw(ctx, &mut canvas);
 
         canvas.finish(ctx)?;
 

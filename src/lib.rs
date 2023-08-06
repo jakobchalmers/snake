@@ -1,7 +1,7 @@
 use ggez::glam::Vec2;
 use ggez::graphics;
 use ggez::graphics::{Color, DrawMode, Mesh, Rect};
-// use ggez::graphics::{Text, TextFragment, TextLayout};
+use ggez::graphics::{Text, TextFragment, TextLayout};
 use ggez::input::keyboard::KeyCode;
 use ggez::Context;
 use ggez::{self, GameResult};
@@ -21,6 +21,8 @@ pub mod constants {
 
 pub mod utils {
 
+    use ggez::graphics::{PxScale, Canvas};
+
     use super::constants::*;
     use super::*;
 
@@ -35,6 +37,35 @@ pub mod utils {
         );
         resized_img.save(&img_path)?;
         Ok(())
+    }
+
+    pub struct ScoreBoard {
+        pub score: u32,
+    }
+
+    impl ScoreBoard {
+        pub fn new() -> Self {
+            ScoreBoard { score: 0 }
+        }
+
+        pub fn update(&mut self) {
+            self.score += 1;
+        }
+
+        pub fn draw(&self, ctx: &Context, canvas: &mut Canvas) {
+            let mut text = Text::new(TextFragment {
+                text: format!("score: {}", self.score),
+                color: Some(Color::BLACK),
+                scale: Some(PxScale::from(25.0)),
+                ..Default::default()
+            });
+            text.set_layout(TextLayout::center());
+
+            let text_x = SCREEN_SIZE / 2.0;
+            let text_y = SCREEN_SIZE / 16.0;
+
+            canvas.draw(&text, Vec2::new(text_x, text_y));
+        }
     }
 
     #[derive(Debug, Clone, Copy)]
@@ -63,8 +94,6 @@ pub mod utils {
             }
         }
     }
-
-    // -------------------------------------------------------
 
     #[derive(Debug, Clone, Copy)]
     pub struct Apple {
