@@ -12,12 +12,12 @@ use serde_json;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
+use chrono::Local;
 
 pub mod constants {
     use super::*;
 
     pub const RECT_SIZE: f32 = 40.0;
-    // pub const RECT_SIZE: f32 = 60.0;
     pub const SCREEN_SIZE: f32 = 800.0;
     pub const SLEEP_TIME: u32 = 100;
     pub const MY_GREEN: Color = Color::new(5.0 / 255.0, 155.0 / 255.0, 4.0 / 255.0, 1.0);
@@ -101,7 +101,8 @@ pub mod utils {
         }
 
         pub fn insert_highscore(&mut self) {
-            self.highscores.insert("Jakob".to_string(), self.score);
+            let datetime = Local::now().format("%Y-%m-%d %H:%M:%S");
+            self.highscores.insert(format!("{}", datetime), self.score);
         }
 
     }

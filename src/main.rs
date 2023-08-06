@@ -19,7 +19,6 @@ enum GamePage {
 }
 
 struct GameState {
-    // game_over: bool,
     game_page: GamePage,
     snake: Snake,
     apple: Apple,
@@ -29,7 +28,6 @@ struct GameState {
 impl GameState {
     fn new() -> Self {
         GameState {
-            // game_over: false,
             game_page: GamePage::GameOn,
             snake: Snake::new(),
             apple: Apple::new(),
@@ -38,7 +36,6 @@ impl GameState {
     }
 
     fn reset(&mut self) {
-        // self.game_over = false;
         self.game_page = GamePage::GameOn;
         self.snake = Snake::new();
         self.apple = Apple::new();
@@ -77,13 +74,14 @@ impl event::EventHandler<ggez::GameError> for GameState {
                     && head.y + RECT_SIZE > point.y
                     && head.y < point.y + RECT_SIZE
                 {
-                    // Todo: Make sure this throws you out immidiately
-                    // self.game_over = true;
-                    self.game_page = GamePage::Menu;
+                    // Todo: Make sure this throws you out immediately
                     if self.score.is_highscore() {
-                        self.score.insert_highscore()
+                        self.score.insert_highscore();
+                        self.game_page = GamePage::LeaderBoard;
+                    } else {
+                        self.game_page = GamePage::Menu;
                     }
-                    break;
+                    break
                 }
             }
 
@@ -136,7 +134,7 @@ impl event::EventHandler<ggez::GameError> for GameState {
                 KeyCode::Escape | KeyCode::Q => ctx.request_quit(),
                 _ => {},
             }
-            
+
             match self.game_page {
                 GamePage::Menu => match keycode {
                     KeyCode::R => self.reset(),
@@ -145,6 +143,7 @@ impl event::EventHandler<ggez::GameError> for GameState {
                 },
                 GamePage::GameOn => match keycode {
                     KeyCode::M => self.game_page = GamePage::Menu,
+                    KeyCode::S => self.game_page = GamePage::LeaderBoard,
                     _ => match Direction::try_from(keycode) {
                         Ok(direction) => self.snake.direction = Some(direction),
                         Err(e) => eprintln!("Can't convert keycode to direction: {:?}", e),
