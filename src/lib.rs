@@ -1,3 +1,4 @@
+use chrono::Local;
 use ggez::glam::Vec2;
 use ggez::graphics;
 use ggez::graphics::Canvas;
@@ -8,11 +9,10 @@ use ggez::Context;
 use ggez::{self, GameResult};
 use image::imageops;
 use rand::Rng;
-use serde_json;
+use serde_json::json;
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::Write;
-use chrono::Local;
+use std::io::{Read, Write};
 
 pub mod constants {
     use super::*;
@@ -22,6 +22,7 @@ pub mod constants {
     pub const SLEEP_TIME: u32 = 100;
     pub const MY_GREEN: Color = Color::new(5.0 / 255.0, 155.0 / 255.0, 4.0 / 255.0, 1.0);
     pub const RESOURCES_PATH: &'static str = "C:/Users/jakob/OneDrive/Rust/snake/resources";
+    pub const HIGHSCORE_FILENAME: &'static str = "highscores.json";
 }
 
 pub mod utils {
@@ -29,7 +30,7 @@ pub mod utils {
     use super::constants::*;
     use super::*;
 
-    fn resize_img(img_name: &str) -> GameResult {
+    pub fn resize_img(img_name: &str) -> GameResult {
         let img_path = format!("{}/{}", RESOURCES_PATH, img_name);
         let raw_img = image::open(&img_path)?;
         let resized_img = imageops::resize(
@@ -42,6 +43,18 @@ pub mod utils {
         Ok(())
     }
 
+    pub fn read_json_highscores() -> Result<HashMap<String, u32>, Box<dyn std::error::Error>> {
+        let file_path = format!("{}/{}", RESOURCES_PATH, HIGHSCORE_FILENAME);
+        match File::open(&file_path) {
+            Ok(mut file) => {
+                let mut json_string = String::new();
+                file.read_to_string(&mut json_string)?;
+                let highscores = serde_json::from_str(&json_string)?;
+                return Ok(highscores);
+            }
+            Err(_e) => return Ok(HashMap::new()),
+        };
+    }
     pub struct ScoreBoard {
         pub score: u32,
         pub highscores: HashMap<String, u32>,
@@ -51,7 +64,8 @@ pub mod utils {
         pub fn new() -> Self {
             ScoreBoard {
                 score: 0,
-                highscores: HashMap::new(),
+                // Todo: Handle this error
+                highscores: read_json_highscores().unwrap(),
             }
         }
 
@@ -83,13 +97,12 @@ pub mod utils {
                     ..Default::default()
                 });
                 text.set_layout(TextLayout::center());
-    
+
                 let text_x = SCREEN_SIZE / 2.0;
                 let text_y = ((i + 1) as f32) * SCREEN_SIZE / 16.0;
-    
+
                 canvas.draw(&text, Vec2::new(text_x, text_y));
             }
-
         }
 
         pub fn reset_score(&mut self) {
@@ -100,11 +113,23 @@ pub mod utils {
             self.highscores.values().all(|score| self.score > *score)
         }
 
-        pub fn insert_highscore(&mut self) {
+        pub fn insert_highscore(&mut self) -> Result<(), Box<dyn std::error::Error>>{
             let datetime = Local::now().format("%Y-%m-%d %H:%M:%S");
             self.highscores.insert(format!("{}", datetime), self.score);
+
+            self.save_json()?;
+            Ok(())
         }
 
+        pub fn save_json(&self) -> Result<(), Box<dyn std::error::Error>> {
+            let json_data = json!(self.highscores);
+            let json_string = serde_json::to_string_pretty(&json_data)?;
+
+            let mut file = File::create(format!("{}/{}", RESOURCES_PATH, HIGHSCORE_FILENAME))?;
+            file.write_all(json_string.as_bytes())?;
+
+            Ok(())
+        }
     }
 
     #[derive(Debug, Clone, Copy)]

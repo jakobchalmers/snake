@@ -76,7 +76,8 @@ impl event::EventHandler<ggez::GameError> for GameState {
                 {
                     // Todo: Make sure this throws you out immediately
                     if self.score.is_highscore() {
-                        self.score.insert_highscore();
+                        // Todo: handle this error
+                        self.score.insert_highscore().unwrap();
                         self.game_page = GamePage::LeaderBoard;
                     } else {
                         self.game_page = GamePage::Menu;
@@ -132,6 +133,13 @@ impl event::EventHandler<ggez::GameError> for GameState {
         if let Some(keycode) = input.keycode {
             match keycode {
                 KeyCode::Escape | KeyCode::Q => ctx.request_quit(),
+                // KeyCode::Escape | KeyCode::Q => {
+                //     match self.score.save_json() {
+                //         Ok(_) => {},
+                //         Err(e) => eprintln!("Failed to save highscores file: {e}")
+                //     }
+                //     ctx.request_quit();
+                // },
                 _ => {},
             }
 
@@ -143,7 +151,6 @@ impl event::EventHandler<ggez::GameError> for GameState {
                 },
                 GamePage::GameOn => match keycode {
                     KeyCode::M => self.game_page = GamePage::Menu,
-                    KeyCode::S => self.game_page = GamePage::LeaderBoard,
                     _ => match Direction::try_from(keycode) {
                         Ok(direction) => self.snake.direction = Some(direction),
                         Err(e) => eprintln!("Can't convert keycode to direction: {:?}", e),
